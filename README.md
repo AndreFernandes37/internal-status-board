@@ -1,73 +1,77 @@
-# Welcome to your Lovable project
+# Home Hub — Portal Interno do Homelab (LAN)
 
-## Project info
+Um dashboard minimalista (tema escuro) para links rápidos e estado de serviços do seu homelab, com métricas do host. Inclui APIs locais (Express), cache, SSE, Basic Auth, Dockerfile e docker-compose.
 
-**URL**: https://lovable.dev/projects/40af63d3-ac54-47df-83e0-53c6133269eb
+## Requisitos
+- Node.js 20+
+- Docker (opcional, recomendado para produção LAN)
 
-## How can I edit this code?
+## Configuração
+Edite o ficheiro `config/services.json` com os seus serviços. Exemplo incluído:
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/40af63d3-ac54-47df-83e0-53c6133269eb) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```json
+{
+  "refreshSeconds": 15,
+  "services": [
+    {"name":"pfSense","url":"https://pfsense.home.arpa","method":"GET","timeoutMs":4000,"ignoreTls":true},
+    {"name":"Proxmox","url":"https://proxmox.home.arpa:8006","method":"GET","timeoutMs":4000,"ignoreTls":true},
+    {"name":"NPM","url":"https://npm.home.arpa","method":"GET","timeoutMs":4000,"ignoreTls":true},
+    {"name":"Nextcloud","url":"https://nextcloud.home.arpa/status.php","method":"GET","timeoutMs":4000,"ignoreTls":true},
+    {"name":"Nginx Server","url":"https://nginx.home.arpa","method":"GET","timeoutMs":4000,"ignoreTls":true},
+    {"name":"Site Público","url":"https://www.thinkbig.pt/","method":"HEAD","timeoutMs":5000,"ignoreTls":false}
+  ]
+}
 ```
 
-**Edit a file directly in GitHub**
+## Variáveis de Ambiente
+Crie `.env` a partir de `.env.example`:
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```ini
+PORT=8080
+BASIC_USER=admin
+BASIC_PASS=trocar
+NODE_ENV=production
+```
 
-**Use GitHub Codespaces**
+## Como correr em desenvolvimento
+1. Instalar deps: `npm i`
+2. Build do frontend: `npm run build`
+3. Arrancar o servidor (APIs + UI estática): `node server/index.js`
+4. Aceder: http://<IP>:8080 — será pedido Basic Auth
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Nota: Em dev, o Vite (`npm run dev`) serve apenas o frontend. As APIs ficam disponíveis pelo servidor Express (`server/index.js`). Para a experiência completa (SSE, Basic Auth, cache), use o servidor Express acima ou Docker.
 
-## What technologies are used for this project?
+## Docker
+Build e run com Compose:
 
-This project is built with:
+```bash
+docker compose up -d --build
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- Serviço: `hub` exposto em `0.0.0.0:8080`
+- Basic Auth obrigatório (defina `BASIC_USER` e `BASIC_PASS`)
+- `config/services.json` é montado como read-only; pode editá-lo sem rebuild
 
-## How can I deploy this project?
+Aceda: `http://<IP>:8080`
 
-Simply open [Lovable](https://lovable.dev/projects/40af63d3-ac54-47df-83e0-53c6133269eb) and click on Share -> Publish.
+## APIs
+- `GET /api/health` — lê `config/services.json`, faz checks (GET/HEAD), timeout, opção `ignoreTls`, cache 10s. Query `?force=true` ignora cache.
+- `GET /api/health/stream` — SSE a cada `refreshSeconds`
+- `GET /api/system` — métricas: load, CPU, RAM, disco root, uptime, IP LAN, temperatura (se disponível)
+- `GET /api/system/stream` — SSE a cada 5s
 
-## Can I connect a custom domain to my Lovable project?
+Todos os endpoints e UI exigem Basic Auth. Sem CORS (mesma origem).
 
-Yes, you can!
+## Nginx Proxy Manager
+- Configure um Proxy Host `hub.home.arpa → hub:8080`
+- Ative apenas na LAN; para acesso externo, use VPN
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Qualidade
+- TypeScript no frontend, tema escuro com Tailwind e tokens semânticos
+- Lint/format conforme configuração do projeto
+- Tratamento de indisponibilidade visível (pílulas de estado e mensagens)
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## Notas
+- Certificados self-signed são aceites por serviço quando `ignoreTls: true`
+- Temperatura: se não disponível, UI mostra “sensor indisponível”
+- Sem trackers nem fontes externas (usa fontes do sistema)

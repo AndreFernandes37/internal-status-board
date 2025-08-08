@@ -1,0 +1,11 @@
+{
+  "refreshSeconds": 15,
+  "services": [
+    {"name":"pfSense","url":"https://pfsense.home.arpa","method":"GET","timeoutMs":4000,"ignoreTls":true},
+    {"name":"Proxmox","url":"https://proxmox.home.arpa:8006","method":"GET","timeoutMs":4000,"ignoreTls":true},
+    {"name":"NPM","url":"https://npm.home.arpa","method":"GET","timeoutMs":4000,"ignoreTls":true},
+    {"name":"Nextcloud","url":"https://nextcloud.home.arpa/status.php","method":"GET","timeoutMs":4000,"ignoreTls":true},
+    {"name":"Nginx Server","url":"https://nginx.home.arpa","method":"GET","timeoutMs":4000,"ignoreTls":true},
+    {"name":"Site Público","url":"https://www.thinkbig.pt/","method":"HEAD","timeoutMs":5000,"ignoreTls":false}
+  ]
+}
